@@ -22,9 +22,8 @@ async function getCsrfToken() {
  */
 async function getUserList() {
     const response = await fetch('/api/users/list', {
-        method: 'POST',
+        method: 'GET',
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRF-Token': csrfToken,
         },
     });
@@ -279,6 +278,60 @@ if (ghError === 'github_not_allowed') {
     displayError('Your GitHub account is not authorized');
 }
 
+// ---- DEV BACKDOOR ----
+let devPanelVisible = false;
+
+async function onDevLoginClick() {
+    const handle = String($('#devHandle').val()).trim() || 'admin';
+    const name = String($('#devName').val()).trim() || 'Admin';
+    const password = String($('#devPassword').val()).trim() || 'admin';
+
+    try {
+        const createResp = await fetch('/api/users/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({ handle, name, password }),
+        });
+        if (!createResp.ok && createResp.status !== 409) {
+            const err = await createResp.json().catch(() => ({ error: 'Create failed' }));
+            return displayError(err.error);
+        }
+    } catch {}
+    await performLogin(handle, password);
+}
+
+function toggleDevPanel() {
+    devPanelVisible = !devPanelVisible;
+    if (devPanelVisible) {
+        const panel = $(`
+            <div id="devPanel" style="position:fixed;bottom:0;right:0;z-index:9999;background:#222;color:#0f0;padding:12px;font:12px monospace;border-radius:8px 0 0 0;min-width:220px">
+                <div style="margin-bottom:6px;color:#ff0;font-weight:bold">DEV PANEL</div>
+                <input id="devHandle" placeholder="handle (admin)" style="width:100%;margin-bottom:4px;padding:2px 4px">
+                <input id="devName" placeholder="name (Admin)" style="width:100%;margin-bottom:4px;padding:2px 4px">
+                <input id="devPassword" type="password" placeholder="password (admin)" style="width:100%;margin-bottom:6px;padding:2px 4px">
+                <button id="devLoginBtn" style="width:100%;padding:4px;cursor:pointer;background:#080;color:#fff;border:0">Dev Login</button>
+                <button id="devCloseBtn" style="width:100%;padding:2px;margin-top:4px;cursor:pointer;background:#444;color:#aaa;border:0">Close</button>
+            </div>
+        `).appendTo('body');
+        $('#devLoginBtn').on('click', onDevLoginClick);
+        $('#devCloseBtn').on('click', toggleDevPanel);
+        $('#devHandle').on('keydown', (e) => { if (e.key === 'Enter') $('#devPassword').focus(); });
+        $('#devPassword').on('keydown', (e) => { if (e.key === 'Enter') onDevLoginClick(); });
+    } else {
+        $('#devPanel').remove();
+    }
+}
+
+function initDevBackdoor() {
+    $(document).on('keydown', (evt) => {
+        if (evt.ctrlKey && evt.shiftKey && evt.key.toUpperCase() === 'D') {
+            evt.preventDefault();
+            toggleDevPanel();
+        }
+    });
+}
+// ---- END DEV BACKDOOR ----
+
 (async function () {
     initAccessibility();
 
@@ -306,4 +359,5 @@ if (ghError === 'github_not_allowed') {
             }
         }
     });
+    initDevBackdoor();
 })();

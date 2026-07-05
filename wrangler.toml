@@ -1,0 +1,8 @@
+name = "sillytavern-frontend"
+main = "src/worker.js"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Serves static files from the public/ directory
+# Proxies /api/* requests to the backend Worker
+site = { bucket = "../../cf-st/public" }

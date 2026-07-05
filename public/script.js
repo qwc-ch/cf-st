@@ -7840,13 +7840,7 @@ async function doOnboarding(avatarId) {
 }
 
 function reloadLoop() {
-    const MAX_RELOADS = 5;
-    let reloads = Number(sessionStorage.getItem('reloads') || 0);
-    if (reloads < MAX_RELOADS) {
-        reloads++;
-        sessionStorage.setItem('reloads', String(reloads));
-        window.location.reload();
-    }
+    window.location.href = '/';
 }
 
 //MARK: getSettings()
